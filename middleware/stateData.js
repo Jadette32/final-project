@@ -21,18 +21,12 @@ const stateData = async (req, res, next) => {
             return res.status(400).json({ message: 'Invalid state abbreviation parameter' });
         }
 
-        // Object spread syntax merges the two state objects.
-        // If either state object does not exist, spread syntax ignores the undefined value.
         const mergedState = {
             ...staticState,
             ...state
         };
 
-        // Since the state code is expected to be returned as 'code', which comes from the static state data,
-        // the stateCode property from the state entry in MongoDB is deleted.
         delete mergedState.code;
-
-        // Also delete undesired metadata from the MongoDB document.
         delete mergedState._id;
         delete mergedState.__v;
 
