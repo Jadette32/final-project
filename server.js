@@ -8,7 +8,6 @@ const cors = require('cors');
 const { logger } = require('./middleware/logEvents');
 const { errorHandler } = require('./middleware/errorHandler');
 
-
 // Create Express app
 const app = express();
 
@@ -26,10 +25,10 @@ app.use('/', express.static(path.join(__dirname, '/public')));
 const statesRouter = require('./routes/api/states');
 app.use('/states', statesRouter);
 
-
 // MongoDB connection
-const MONGODB_URI = process.env.MONGODB_CONNECTION_STRING;
-mongoose.connect(MONGODB_URI)
+const MONGODB_CONNECTION_STRING = "mongodb+srv://jholcomb:testing123@state-data-cluster.8csbwbe.mongodb.net/StatesDB?retryWrites=true&w=majority&appName=state-data-cluster";
+
+mongoose.connect(MONGODB_CONNECTION_STRING)
   .then(() => {
     console.log('Connected to MongoDB Atlas');
     // Start the server once connected to MongoDB
