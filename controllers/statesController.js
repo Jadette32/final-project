@@ -1,61 +1,76 @@
 const State = require('../model/States');
 
+
+//get all states data from statesData.js
 const data = {
     states: require('../model/statesData.json'),
-    setStates: function(data) { this.states = data }
+    setStates: function (data) {this.states = data}
 };
 
-const addEntry = async () => {
-    try {
-        const statePromises = Object.keys(data.states).map(async (stateKey) => {
-            const state = data.states[stateKey];
-            const fact = await State.findOne({ stateCode: state.code }).exec();
-            if (fact) {
-                state.funfacts = fact.funfacts;
-            }
-        });
-        await Promise.all(statePromises);
-        console.log("Fun facts added successfully.");
-    } catch (err) {
-        console.error("Error adding fun facts:", err);
+// set async function to establish funfacts contents
+async function addEntry(){
+    for (const state in data.states){ 
+        const fact = await State.findOne({stateCode: data.states[state].code}).exec(); 
+        if (fact){
+            // adding fun facts
+            data.states[state].funfacts = fact.funfacts; 
+        }
     }
 }
 
+// addEntry to combine json data with new data entries
 addEntry();
 
-
-const getAllStates = async(req, res) => {
-    if (req.query) {
-        if (req.query.contig == 'true') {
+// get all states
+const getAllStates = async (req,res)=> {
+    // check for contig query
+    if (req.query){
+        if(req.query.contig == 'true')   
+        {
+            // remove HI and AK to send remaining states (only contiguous)
             const result = data.states.filter(st => st.code != "AK" && st.code != "HI");
             res.json(result);
             return;
-        } else if (req.query.contig == 'false') {
-            const result = data.states.filter(st => st.code == "AK" || st.code == "HI");
+        }
+       // if not contig query
+        else if (req.query.contig == 'false') 
+         {
+            const result = data.states.filter( st => st.code == "AK" || st.code == "HI");     
             res.json(result);
             return;
-        }
+         }
     }
-    res.json(data.states);
+    // default send all states
+   res.json(data.states); 
 }
 
-const getState = (req, res) => {
+// get individual state
+const getState = (req,res)=> {
+    // get state code and convert it to uppercase
     const code = req.params.state.toUpperCase();
-    const state = data.states.find(st => st.code == code);
-    if (!state) {
-        return res.status(404).json({ 'message': 'Invalid state abbreviation parameter' });
+    // search code
+    const state = data.states.find( st => st.code == code);
+    if(!state){ 
+        // code not found error message
+        return res.status(404).json({'message': 'Invalid state abbreviation parameter'});
     }
+    // for valid code, send state
     res.json(state);
-}
+ }
 
-const getCapital = (req, res) => {
-    const code = req.params.state.toUpperCase();
-    const state = data.states.find(st => st.code == code);
-    if (!state) {
-        return res.status(404).json({ 'message': 'Invalid state abbreviation parameter' });
+ //get individual state and its capital
+ const getCapital = (req,res)=> {
+     // get state code and convert it to uppercase
+     const code = req.params.state.toUpperCase();
+    // search code
+    const state = data.states.find( st => st.code == code);
+    if(!state){
+        // code not found error message
+        return res.status(404).json({'message': 'Invalid state abbreviation parameter'});
     }
-    res.json({ "state": state.state, "capital": state.capital_city });
-}
+    // for valid code, send state and capital
+    res.json({"state": state.state, "capital": state.capital_city}); 
+ }
 
  // get individual state and its nickname
  const getNickname = (req,res)=> {
@@ -211,26 +226,48 @@ const updateFunFact = async (req,res)=>{
 }   
 
 
-const deleteFunFact = async(req, res) => {
-    if (!req.params.state || !req.body.index) {
-        return res.status(400).json({ 'message': 'Invalid state abbreviation parameter or index' });
+// delete fact from individual state
+const deleteFunFact = async(req,res)=>{
+    // check code
+    if(!req.params.state){ 
+        // code not found error message
+        return res.status(400).json({'message': 'Invalid state abbreviation parameter'});
+    }
+    // check index
+    if(!req.body.index) 
+    {
+        // index value required error message
+        return res.status(400).json({"message": "State fun fact index value required"});
     }
 
+     // get successful code and convert to uppercase
     const code = req.params.state.toUpperCase();
-    const state = await State.findOne({ stateCode: code }).exec();
-    const jstate = data.states.find(st => st.code == code);
+
+    const state = await State.findOne({stateCode: code}).exec(); 
+    const jstate = data.states.find( st => st.code == code);
 
     let index = req.body.index;
-    if (!jstate.funfacts || index - 1 == 0) {
-        return res.status(400).json({ "message": `No Fun Facts found for ${jstate.state}` });
+    // for empty array
+    if (!jstate.funfacts || index-1 == 0)
+    {
+        return res.status(400).json({"message": `No Fun Facts found for ${jstate.state}`});
     }
+    // for empty index
+    if(index > state.funfacts.length || index < 1 || !index){ 
+        const state = data.states.find( st => st.code == code);
+        return res.status(400).json({"message": `No Fun Fact found at that index for ${jstate.state}`});
+    }
+    // index decrement
+    index -= 1; 
 
-    index -= 1;
+    // splice at index location
+    state.funfacts.splice(index, 1); 
+    const result = await state.save();
 
-    state.funfacts.splice(index, 1);
-    await state.save();
-
-    addEntry();
-    res.status(200).json({ "message": "Fun fact deleted successfully" });
+    // success- send status code
+    res.status(201).json(result);
+    // update json data
+    addEntry(); 
 }
+
  module.exports={getAllStates, getState, getNickname, getPopulation, getCapital, getAdmission, getFunFact, createFunFact, updateFunFact,deleteFunFact};
