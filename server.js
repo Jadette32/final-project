@@ -26,8 +26,6 @@ const statesRouter = require('./routes/api/states');
 app.use('/states', statesRouter);
 
 // MongoDB connection
-const MONGODB_CONNECTION_STRING = "mongodb+srv://jholcomb:testing123@state-data-cluster.8csbwbe.mongodb.net/StatesDB?retryWrites=true&w=majority&appName=state-data-cluster";
-
 mongoose.connect(MONGODB_CONNECTION_STRING)
   .then(() => {
     console.log('Connected to MongoDB Atlas');
